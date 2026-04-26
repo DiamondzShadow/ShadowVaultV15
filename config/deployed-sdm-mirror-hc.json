@@ -1,0 +1,12 @@
+{
+  "chainId": 999,
+  "sdmMirror": "0x1E84DAFfFA4DCC4D74a4951403b9fbC6A832752C",
+  "vault": "0x481D57E356cF99E44C25675C57C178D9Ef46BD57",
+  "keeper": "0x506cB442df1B58ae4F654753BEf9E531088ca0eB",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "sourceChainId": 42161,
+  "sourceToken": "0x602b869eEf1C9F0487F31776bad8Af3C4A173394",
+  "discountBps": "5000",
+  "threshold": "10000000000000000000000",
+  "deployedAt": "2026-04-19T22:46:02.571Z"
+}

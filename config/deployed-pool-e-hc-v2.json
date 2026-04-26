@@ -1,0 +1,20 @@
+{
+  "chainId": 999,
+  "usdc": "0xb88339CB7199b77E23DB6E890353E22632Ba630f",
+  "hlpVault": "0xdfc24b077bc1425ad1dea75bcb6f8158e10df303",
+  "revenueRouter": "0xeECf14e46AAAC32d50DA4b3BaE475c4BbFE00664",
+  "adapter": "0x2F6aCbdd25FF081efE2f2f4fF239189DaC6C67a9",
+  "skin": "0x5f90c2f0E9CE11A19d49A2E54d9df7759C7581ae",
+  "vault": "0x481D57E356cF99E44C25675C57C178D9Ef46BD57",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "treasury": "0xA7A09aF8a58E248a33a7f43deC7f1983ba82921E",
+  "keeper": "0x506cB442df1B58ae4F654753BEf9E531088ca0eB",
+  "caps": {
+    "perTx": "500000000",
+    "daily": "2000000000"
+  },
+  "deployedAt": "2026-04-19T22:06:02.495Z",
+  "notes": "v2 adapter: spot↔perp class transfer hops added. Supersedes v1 at 0x5c45a7a4… (retired).",
+  "revenueRouter_v1_unused": "0xe3F850FEa1cA73442EA618AaD0dc2cfc5d35fe21",
+  "redeployedAt": "2026-04-21T05:18:01.699Z"
+}

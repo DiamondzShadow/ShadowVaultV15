@@ -1,0 +1,10 @@
+{
+  "chainId": 42161,
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "lzEndpoint": "0x1a44076050125825900e736c501f859c50fE728c",
+  "hyperEid": 30367,
+  "contracts": {
+    "hyperPositionWrapper": "0x72bD38e770956D4194fD87Ae6C9424b1FF44FA5F"
+  },
+  "deployedAt": "2026-04-21T03:57:13.381Z"
+}

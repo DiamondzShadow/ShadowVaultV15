@@ -1,0 +1,46 @@
+{
+  "chainId": 42161,
+  "network": "arbitrum",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "admin": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "diggerRegistry": "0x3f93B052CDA8CC0ff39BcaA04B015F86AA28af99",
+  "contracts": {
+    "nftValuer": "0x3BBCb09B06B7884934Af1f351b681b3B42E260B8"
+  },
+  "configured": [
+    {
+      "label": "A (Blue Chip Morpho)",
+      "nft": "0xdfA8D9fe6a0FD947362a40f41f7A385c3425Dd4a",
+      "vault": "0xBCEfabd6948d99d9E98Ae8910431D239B15759Aa",
+      "mode": "VAULT_POSITION",
+      "maxClampUSDC": "0"
+    },
+    {
+      "label": "B (DeFi+RWA GMX)",
+      "nft": "0x67940CD1D7000494433B1Be44Dde494994393174",
+      "vault": "0xDFCb998A7EBFA5B85a32c0Db16b2AbB85a1c25ce",
+      "mode": "VAULT_POSITION",
+      "maxClampUSDC": "0"
+    },
+    {
+      "label": "C (Full Spectrum Aave)",
+      "nft": "0x9C86B7C9f4195d3d5150A39983ca0536353109f6",
+      "vault": "0xabBD8748ACC1ca2abc3fA5933EfE2CB1cdf7B8f1",
+      "mode": "VAULT_POSITION",
+      "maxClampUSDC": "0"
+    },
+    {
+      "label": "D (Hard Assets)",
+      "nft": "0x4281BE12D425c6BBA1A79C5C7D1c718fC5037171",
+      "vault": "0x109B722501A713E48465cA0509E8724f6640b9D4",
+      "mode": "VAULT_POSITION",
+      "maxClampUSDC": "0"
+    }
+  ],
+  "deployedAt": "2026-04-20T16:00:28.838Z",
+  "notes": [
+    "Admin = deployer EOA; rotate to Safe (0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43) alongside V15 rotation.",
+    "Clamp disabled for v1 — bound by LendingPool.ABSOLUTE_MAX_LTV_BPS=7500 and per-collection maxLtvBps=5000.",
+    "LendingPool v1.2 is LIVE but does NOT yet read this valuer. Operator must deploy v1.3 and call pool.setValuer(valuer)."
+  ]
+}

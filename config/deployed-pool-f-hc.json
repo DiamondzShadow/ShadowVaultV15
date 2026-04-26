@@ -1,0 +1,24 @@
+{
+  "chainId": 999,
+  "basketId": 0,
+  "basketName": "HyperCore",
+  "vault": "0x3F4396417f142fD406215E8437C448Cb28bf7552",
+  "basketAdapter": "0x39D10E5823E4472070413070E8a51bc75F0bd0D0",
+  "yieldAdapter": "0x5c45a7a4fE3A28FA8d55521F8F501173312C20e4",
+  "yieldReceipt": "0x389b19dCdb3c43A5c71b1949a510791Db619090b",
+  "basketReceipt": "0x1f967c06EF54eA0E4855a9B09d7940adCcEda083",
+  "navOracle": "0x61801bC99d1A8CBb80EBE2b4171c1C6dC1B684f8",
+  "shadowPass": "0x397BaB25a41Aaa5cF76F19DE8794D5476B576CCC",
+  "usdc": "0xb88339CB7199b77E23DB6E890353E22632Ba630f",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "treasury": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "keeper": "0x506cB442df1B58ae4F654753BEf9E531088ca0eB",
+  "allocation": {
+    "basketBps": 6000,
+    "yieldBps": 4000
+  },
+  "deployedAt": "2026-04-15T21:19:15.424Z",
+  "notes": "v2: with rescue. Old vault at vault_v1_unused is a zombie (0 TVL before redeploy).",
+  "vault_v1_unused": "0xe442CFF139B6339f7468240b4119E7b2B7841772",
+  "redeployedAt": "2026-04-21T04:14:02.930Z"
+}

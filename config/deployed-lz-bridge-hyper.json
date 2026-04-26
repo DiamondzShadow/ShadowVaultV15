@@ -1,0 +1,13 @@
+{
+  "chainId": 999,
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "keeper": "0xCD20FE6E10838d8AEc242E0438A65c3d704D3E3d",
+  "lzEndpoint": "0x3A73033C0b1407574C76BdBAc67f126f6b4a9AA9",
+  "arbEid": 30110,
+  "contracts": {
+    "hyperPositionLocker": "0xe04534850F5A562F63D3eFD24D8D1A143420235B"
+  },
+  "adminSafe": "0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43",
+  "deployedAt": "2026-04-21T03:57:03.620Z",
+  "notes": "Admin = deployer EOA during initial bake; rotate to Safe after arb-side deploy + full cross-wire + DVN setConfig is confirmed working."
+}

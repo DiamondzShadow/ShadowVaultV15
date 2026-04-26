@@ -1,0 +1,66 @@
+{
+  "chainId": 42161,
+  "network": "arbitrum",
+  "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  "ausdc": "0x724dc807b04555b71ed48a6896b6F41593b8C637",
+  "aaveV3Pool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+  "treasury": "0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43",
+  "keeper": "0x506cB442df1B58ae4F654753BEf9E531088ca0eB",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "diggerRegistry": "0x090275f1ddae9e37C28D495AD9f9044723D787c9",
+  "royaltyRouter": "0xb9c6edfcd6fBd861ba8b92c3eDddbf5babED1be4",
+  "contracts": {
+    "lendingPool": "0xc2f02Dff81d019d10d23d9A29bC774830D54290E",
+    "aaveV3Sink": "0x6CC249345f6C6a85F2128d03c3818026c492F18D",
+    "hyperRemoteMirror": "0xFb192B3e83E3FacC51a14aA78a9d37a50f587964",
+    "sweepController": "0xEc181596A44AFF5747338f6139dBd35C2A930B11",
+    "lendingPool_v1_unused": "0x68927671353Cf8f881CCa6430ba396Ca0C7D1004",
+    "lendingPool_v1_1_unused": "0x54c8B214f1372163EBCa481C3629CC3B96F19534",
+    "lendingPool_v1_2_unused": "0xA1C503676e9572b792BEE9687d635b4A474690C1",
+    "nftValuer": "0x83b946C721a0B5f5871DC91F884b364D1410f131",
+    "sweepController_v1_unused": "0xE2239A47a98976984aab7bf4E8fea1Db04E1BdC3",
+    "compoundV3Sink": "0xDC5078A79831ef732bB59f8378a795d7cea6585e",
+    "lendingPool_v1_3_unused": "0x4BA0779695b7A776Be8bD1a1346AD0EeF402f4aF",
+    "nftValuer_v1_unused": "0x3BBCb09B06B7884934Af1f351b681b3B42E260B8",
+    "arbPositionWrapper": "0x43e91f1bceB6bFFc263313facB586436850a4BA0",
+    "hyperPositionWrapper": "0x72bD38e770956D4194fD87Ae6C9424b1FF44FA5F",
+    "lendingPool_v1_4_unused": "0x4Ded7eF1a0fB04501da45e68b9432863570E0B59",
+    "marketplace_v1_unused": null,
+    "marketplace": "0xa27A29DC2e386B3FdEb245E207f96C67b7998225",
+    "nftValuer_v2_unused": "0xD90f5aE128118D9477C47478B9c5acbD69190ca1",
+    "diggerRegistry": "0x090275f1ddae9e37C28D495AD9f9044723D787c9",
+    "royaltyRouter": "0xb9c6edfcd6fBd861ba8b92c3eDddbf5babED1be4",
+    "hyperRemoteMirror_v1_unused": "0x6d114293629153d60eD1C19012BE117Df2d72963"
+  },
+  "config": {
+    "borrowAprBps": 800,
+    "protocolReserveBps": 3000,
+    "liquidationBufferBps": 1000,
+    "liquidationBonusBps": 500,
+    "minLoanDuration": 3600,
+    "minSupplyHold": 21600,
+    "sweepTargets": {
+      "reserveBps": 2000,
+      "aaveBps": 3500,
+      "compoundBps": 3000,
+      "remoteBps": 1500
+    }
+  },
+  "deployedAt": "2026-04-20T17:47:04.188Z",
+  "notes": "v1.4 + NFTValuer v2 (VAULT_MIRROR) + ArbPositionWrapper. Wrapper registered as collection, valuer VAULT_MIRROR mode. | Stage 3 redeploy 2026-04-21T04:53:33.206Z: rescue + in-house class.",
+  "compound": {
+    "comet": "0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf"
+  },
+  "ccip": {
+    "router": "0x141fa059441E0ca23ce184B6A78bafD2A517DdE8",
+    "polySelector": "4051577828743386545",
+    "link": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4"
+  },
+  "hyperBridge": {
+    "lzEndpoint": "0x1a44076050125825900e736c501f859c50fE728c",
+    "hyperEid": 30367
+  },
+  "diggerRegistry_v1_unused": "0x3f93B052CDA8CC0ff39BcaA04B015F86AA28af99",
+  "royaltyRouter_v1_unused": "0x9ad3Dd99923F539DFAb5b0Dc99E87431FDE9A438",
+  "redeployedAt": "2026-04-21T05:15:57.278Z"
+}

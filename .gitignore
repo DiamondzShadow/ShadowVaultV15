@@ -1,0 +1,46 @@
+# --- secrets ---
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.key
+*.pem
+*keystore*
+secrets/
+secrets.json
+
+# --- build / cache ---
+node_modules/
+artifacts/
+cache/
+out/
+typechain-types/
+typechain/
+coverage/
+coverage.json
+.coverage_*
+
+# --- foundry ---
+forge-cache/
+broadcast/
+
+# --- runtime / state ---
+logs/
+*.log
+keeper/lending-bridge-state.json
+keeper/*.state.json
+*.pid
+
+# --- deploy artifacts (live addresses are public, but keep raw broadcasts out) ---
+deployments/
+
+# --- editor / OS ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- internal ---
+lovable/
+docs/SAFE_TXS_*.md.bak

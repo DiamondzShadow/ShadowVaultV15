@@ -1,0 +1,86 @@
+{
+  "chainId": 137,
+  "network": "polygon",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "admin": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "treasury": "0xdF46A5083C01C82b2e70fF97E9cf27fC80000851",
+  "safe": "0xdF46A5083C01C82b2e70fF97E9cf27fC80000851",
+  "usdc": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+  "contracts": {
+    "diggerRegistry": "0x1fB1398e95885Ea17BAde6F87442f97B14aBCDe8",
+    "royaltyRouter": "0x7F1cbCCBc7C00A4Ecb47cf94Dc37Ed4049A6E8D1",
+    "marketplace": "0xa08460C2719a7F04D6a5c3bd126a70F7EF8296aC",
+    "nftValuer": "0xa3605E52a02dA01FB52681115E6DF5b177E9CD64",
+    "lendingPool": "0xB435bc688a01d46264710a16f087932D954D49A4",
+    "aaveV3Sink": "0xa40941C910F787df8Fd2EE226f11409AEB2fbBdb",
+    "sweepController": "0x41F03396F81a5B23BE7F8e286956697f049d8D62",
+    "lendingPool_v1_3_unused": "0x2e5b111447a93ca2b900e9da96822344d6Be49eC",
+    "nftValuer_v1_unused": "0xD6F819B0Ea9091988D38D937fC6745E142990Ba8",
+    "polygonNFTLocker": "0xd67ACb5770467ce33152A9A02DecCd26242465aD",
+    "polygonNFTLocker_v1_unused_badlink": "0x8f74dc270F4d3f0F58068CAAb31eb05Ce4E1EFFA",
+    "lendingPool_v1_4_unused": "0x3596A83d971680D6ec3560b1d54C0387ab872Db0",
+    "marketplace_v1_unused": "0x4b3DE658a4A8E42b10250dCeb2cE4B6D3Be841B2",
+    "nftValuer_v2_unused": "0x0004bCaF16d3Fb16Df210615d9a666486297B79C"
+  },
+  "digger1": {
+    "id": 1,
+    "owner": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+    "bondUSDC": "100000",
+    "feeSplit": {
+      "protocolBps": 1000,
+      "supplierBps": 7000,
+      "diggerBps": 2000
+    },
+    "collections": [
+      {
+        "label": "A (Blue Chip)",
+        "nft": "0x6bef5509890dc0f0B613ea8efe471ed9c23D7B1c",
+        "vault": "0xBAF20b022c7D30E4F2f42238152A9AE7D183aaEf",
+        "maxLtvBps": 5000,
+        "valuerMode": "VAULT_POSITION"
+      },
+      {
+        "label": "B (Polygon DeFi)",
+        "nft": "0x819736a28a2922c302a16A0c4CE39F402FFdbbc8",
+        "vault": "0xB9FA2148A18Ac8a2Eea91e8529BAbc3B943970a4",
+        "maxLtvBps": 5000,
+        "valuerMode": "VAULT_POSITION"
+      },
+      {
+        "label": "C (Full Spectrum)",
+        "nft": "0x05CDD626ed21D6B3De096849a51ca5dA892dD5B7",
+        "vault": "0xA92767d3AdE9859EaD492158aE26A70C883A34fF",
+        "maxLtvBps": 5000,
+        "valuerMode": "VAULT_POSITION"
+      },
+      {
+        "label": "D (Hard Money)",
+        "nft": "0x45985109C0235c320D2a0c9111C4CE905720C309",
+        "vault": "0xa2A7227752C8f77b866D7903db39F1317f30fA08",
+        "maxLtvBps": 5000,
+        "valuerMode": "VAULT_POSITION"
+      }
+    ]
+  },
+  "onboardingStatus": "complete — digger #1 open with 0.1 USDC bond, 4 collections registered, valuer configured. minBond NOT restored to 1000 USDC (deployer low balance).",
+  "deployedAt": "2026-04-20T18:06:47.037Z",
+  "aave": {
+    "pool": "0x794a61358D6845594F94dc1DB02A252b5b4814aD",
+    "aUsdc": "0xA4D94019934D8333Ef880ABFFbF2FDd611C762BD"
+  },
+  "config": {
+    "sweepTargets": {
+      "reserveBps": 3000,
+      "aaveBps": 7000
+    }
+  },
+  "ccip": {
+    "router": "0x849c5ED5a80F5B408Dd4969b78c2C8fdf0565Bfe",
+    "arbSelector": "4949039107694359620",
+    "link": "0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39"
+  },
+  "diggerRegistry": "0x1fB1398e95885Ea17BAde6F87442f97B14aBCDe8",
+  "royaltyRouter": "0x7F1cbCCBc7C00A4Ecb47cf94Dc37Ed4049A6E8D1",
+  "redeployedAt": "2026-04-21T04:54:55.806Z",
+  "notes": " | Stage 3 redeploy 2026-04-21T04:54:55.806Z: rescue + in-house class."
+}

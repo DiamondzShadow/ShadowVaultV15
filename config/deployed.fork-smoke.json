@@ -1,0 +1,182 @@
+{
+  "version": "v15.0.0",
+  "network": "hardhat",
+  "chainId": 42161,
+  "deployedAt": "2026-04-11T01:17:36.912Z",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "admin": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "treasury": "0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43",
+  "sdmToken": "0x602b869eEf1C9F0487F31776bad8Af3C4A173394",
+  "core": {
+    "sdmDiscountOracle": "0xc9c14Dee41Ee02bd202c719E52c0c10719a29471",
+    "revenueRouter": "0x32A4E0E5Ac55C41707C78fc8b8Ef573D93BBE506",
+    "bonusAccumulator": "0x8c248C276feC6B4ba848c4A8954a4a95d0bFc03c"
+  },
+  "adapters": {
+    "aaveV5": "0x96DD1838a1d67850cEe1324E6bAd4f8713c80994",
+    "fluid": "0x80B6373A06b974F36cF1AaCA8c69aba0F9c5B964",
+    "silo": "0xb73ad26e6192fCD6bE3701115C1475849057c6eF"
+  },
+  "oracles": {
+    "pythArbitrum": "0xff1a0f4744e8582DF1aE09D5611b887B6a12925C",
+    "pepeUsdFeed": "0xaF04dcEcC6275269597502CfB3333771EB10527f",
+    "xauUsdFeed": "0x110CF34170e86E6C11A3656AFe4Eb31448F29269"
+  },
+  "pools": {
+    "A": {
+      "label": "Blue Chip",
+      "vault": "0xe49F9bD99AD2125d99dA5940E75579f54d230038",
+      "positionNFT": "0xf76A06171f193DC7509fE51010b7c35DBdC0B398",
+      "yieldSource": "aave",
+      "adapter": "0x96DD1838a1d67850cEe1324E6bAd4f8713c80994",
+      "basket": [
+        {
+          "token": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+          "symbol": "WETH",
+          "weightBps": 4500,
+          "feed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612"
+        },
+        {
+          "token": "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
+          "symbol": "WBTC",
+          "weightBps": 3500,
+          "feed": "0x6ce185860a4963106506C203335A2910413708e9"
+        },
+        {
+          "token": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+          "symbol": "USDC",
+          "weightBps": 2000,
+          "feed": "0x0000000000000000000000000000000000000000"
+        }
+      ]
+    },
+    "B": {
+      "label": "DeFi + RWA",
+      "vault": "0x70f52D28abe4a0892e3daED979C735023Af7d3f5",
+      "positionNFT": "0xB9a5367F8FFb0C219e1AEc66d7B5778644e85280",
+      "yieldSource": "silo",
+      "adapter": "0xb73ad26e6192fCD6bE3701115C1475849057c6eF",
+      "basket": [
+        {
+          "token": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+          "symbol": "WETH",
+          "weightBps": 2500,
+          "feed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a",
+          "symbol": "GMX",
+          "weightBps": 2000,
+          "feed": "0xDB98056FecFff59D032aB628337A4887110df3dB",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
+          "symbol": "PENDLE",
+          "weightBps": 2000,
+          "feed": "0x66853E19d73c0F9301fe099c324A1E9726953433",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4",
+          "symbol": "LINK",
+          "weightBps": 1500,
+          "feed": "0x86E53CF1B870786351Da77A57575e79CB55812CB",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0x40461291347e1eCbb09499F3371D3f17f10d7159",
+          "symbol": "XAUt0",
+          "weightBps": 1000,
+          "feed": "0x110CF34170e86E6C11A3656AFe4Eb31448F29269",
+          "oracleType": "pyth",
+          "staleness": 259200
+        },
+        {
+          "token": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+          "symbol": "USDC",
+          "weightBps": 1000,
+          "feed": "0x0000000000000000000000000000000000000000",
+          "oracleType": "none"
+        }
+      ]
+    },
+    "C": {
+      "label": "Full Spectrum",
+      "vault": "0x3D92C115496437b9Ae8eCd49324004a320AF8907",
+      "positionNFT": "0x2fd6568D54C8c2236CCf6a16b712A9c1Adb98a4d",
+      "yieldSource": "fluid",
+      "adapter": "0x80B6373A06b974F36cF1AaCA8c69aba0F9c5B964",
+      "basket": [
+        {
+          "token": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1",
+          "symbol": "WETH",
+          "weightBps": 2500,
+          "feed": "0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0x2f2a2543B76A4166549F7aaB2e75Bef0aefC5B0f",
+          "symbol": "WBTC",
+          "weightBps": 1500,
+          "feed": "0x6ce185860a4963106506C203335A2910413708e9",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0xfc5A1A6EB076a2C7aD06eD22C90d7E710E35ad0a",
+          "symbol": "GMX",
+          "weightBps": 1500,
+          "feed": "0xDB98056FecFff59D032aB628337A4887110df3dB",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0x912CE59144191C1204E64559FE8253a0e49E6548",
+          "symbol": "ARB",
+          "weightBps": 1500,
+          "feed": "0xb2A824043730FE05F3DA2efaFa1CBbe83fa548D6",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0x0c880f6761F1af8d9Aa9C466984b80DAb9a8c9e8",
+          "symbol": "PENDLE",
+          "weightBps": 1000,
+          "feed": "0x66853E19d73c0F9301fe099c324A1E9726953433",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0xf97f4df75117a78c1A5a0DBb814Af92458539FB4",
+          "symbol": "LINK",
+          "weightBps": 1000,
+          "feed": "0x86E53CF1B870786351Da77A57575e79CB55812CB",
+          "oracleType": "chainlink"
+        },
+        {
+          "token": "0x25d887Ce7a35172C62FeBFD67a1856F20FaEbB00",
+          "symbol": "PEPE",
+          "weightBps": 500,
+          "feed": null,
+          "oracleType": "pyth"
+        },
+        {
+          "token": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+          "symbol": "USDC",
+          "weightBps": 500,
+          "feed": "0x0000000000000000000000000000000000000000",
+          "oracleType": "none"
+        }
+      ]
+    }
+  },
+  "swapTargets": {
+    "zeroEx": "0xDef1C0ded9bec7F1a1670819833240f027b25EfF",
+    "oneInchV5": "0x1111111254EEB25477B68fb85Ed929f73A960582"
+  },
+  "postDeployTodo": [
+    "Verify each contract on Arbiscan via hardhat-verify",
+    "Fund BonusAccumulator notifiers (BridgeFeeDAO etc.) via grantRole(NOTIFIER_ROLE)",
+    "Run a $100 smoke deposit + withdraw on each pool to validate end-to-end",
+    "Start the keeper via pm2 start ecosystem.keeper.config.cjs",
+    "Transfer DEFAULT_ADMIN_ROLE to Gnosis Safe ONLY after all mainnet tests pass"
+  ]
+}

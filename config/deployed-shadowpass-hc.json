@@ -1,0 +1,26 @@
+{
+  "chainId": 999,
+  "oracle": "0x61801bC99d1A8CBb80EBE2b4171c1C6dC1B684f8",
+  "yieldReceipt": "0x389b19dCdb3c43A5c71b1949a510791Db619090b",
+  "basketReceipt": "0x1f967c06EF54eA0E4855a9B09d7940adCcEda083",
+  "shadowPass": "0x9A3115e82B5E828df8F0DE943e6f30Bc991E0f64",
+  "baskets": {
+    "0": {
+      "name": "HyperCore",
+      "maxStalenessSecs": 900,
+      "maxDriftBps": 1000
+    }
+  },
+  "roles": {
+    "admin": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+    "keeper": "0x506cB442df1B58ae4F654753BEf9E531088ca0eB",
+    "pauser": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3"
+  },
+  "deployedAt": "2026-04-15T21:09:03.660Z",
+  "notes": "Pool F vault integration pending. Keeper must push NAV before any BasketReceipt is minted.",
+  "shadowPassValuer": "0x92A94f251C332A6A6278e55167cb92a4aCF6bAc1",
+  "valuerDeployedAt": "2026-04-21T04:14:02.930Z",
+  "shadowPass_v1_unused": "0x397BaB25a41Aaa5cF76F19DE8794D5476B576CCC",
+  "valuer_v1_unused": "0x27980Da17BAC6884631412b30B5eD1C49915C702",
+  "redeployedAt": "2026-04-21T04:14:02.930Z"
+}

@@ -1,0 +1,21 @@
+{
+  "chainId": 42161,
+  "network": "arbitrum",
+  "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  "treasury": "0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "contracts": {
+    "diggerRegistry": "0x3f93B052CDA8CC0ff39BcaA04B015F86AA28af99",
+    "royaltyRouter": "0x9ad3Dd99923F539DFAb5b0Dc99E87431FDE9A438",
+    "marketplace": "0x311D7A411876a44C423f4bf170D48944A5c42696",
+    "nftValuer": "0xD90f5aE128118D9477C47478B9c5acbD69190ca1",
+    "nftValuer_v1_unused": "0x3BBCb09B06B7884934Af1f351b681b3B42E260B8",
+    "arbPositionWrapper": "0x43e91f1bceB6bFFc263313facB586436850a4BA0"
+  },
+  "config": {
+    "protocolFeeBps": 250,
+    "minBondUSDC": "1000000000",
+    "unstakeDelay": 1209600
+  },
+  "deployedAt": "2026-04-20T00:20:50.942Z"
+}

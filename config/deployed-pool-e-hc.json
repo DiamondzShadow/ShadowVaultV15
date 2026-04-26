@@ -1,0 +1,18 @@
+{
+  "chainId": 999,
+  "usdc": "0xb88339CB7199b77E23DB6E890353E22632Ba630f",
+  "hlpVault": "0xdfc24b077bc1425ad1dea75bcb6f8158e10df303",
+  "revenueRouter": "0xe3F850FEa1cA73442EA618AaD0dc2cfc5d35fe21",
+  "adapter": "0x5c45a7a4fE3A28FA8d55521F8F501173312C20e4",
+  "skin": "0x4bAd7c7257016f0b94144775f53C5BdF97219ED0",
+  "vault": "0x31D4BD9C446865333fB219F9ebAB6EbFCA9302Ba",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "treasury": "0xA7A09aF8a58E248a33a7f43deC7f1983ba82921E",
+  "keeper": "0x506cB442df1B58ae4F654753BEf9E531088ca0eB",
+  "caps": {
+    "perTx": "500000000",
+    "daily": "2000000000"
+  },
+  "deployedAt": "2026-04-15T18:08:01.991Z",
+  "treasuryRotatedAt": "2026-04-15T18:45:04.275Z"
+}
