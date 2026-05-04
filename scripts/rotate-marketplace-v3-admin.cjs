@@ -3,7 +3,10 @@
 
 const hre = require("hardhat");
 
-const MARKETPLACE_V3 = "0x375eD66ABf360444cf2c23fCa1f4b12484087236";
+// v3.1 redeploy 2026-05-04 (adds LIQUIDATOR_ROLE for Phase 3 lending).
+// Original v3 at 0x375eD66ABf360444cf2c23fCa1f4b12484087236 stays deployed
+// but is no longer the canonical address.
+const MARKETPLACE_V3 = "0x749735623C5f9304E6a6715b066C9FBa7b9F30DB";
 const TARGET_ADMIN   = "0x18b2b2ce7d05Bfe0883Ff874ba0C536A89D07363"; // Arb Safe (per reference_safes.md)
 
 const DEFAULT_ADMIN_ROLE = "0x" + "0".repeat(64);

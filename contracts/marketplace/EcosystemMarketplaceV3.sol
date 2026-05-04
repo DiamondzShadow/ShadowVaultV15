@@ -32,7 +32,8 @@ import {RoyaltyRouter} from "./RoyaltyRouter.sol";
 contract EcosystemMarketplaceV3 is AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant PAUSER_ROLE     = keccak256("PAUSER_ROLE");
+    bytes32 public constant LIQUIDATOR_ROLE = keccak256("LIQUIDATOR_ROLE");
 
     IERC20         public immutable USDC;
     DiggerRegistry public immutable REGISTRY;
@@ -61,6 +62,10 @@ contract EcosystemMarketplaceV3 is AccessControl, ReentrancyGuard {
 
     event Listed(
         uint256 indexed orderId, address indexed seller, address indexed nft,
+        uint256 tokenId, uint256 priceUSDC, uint64 expiresAt
+    );
+    event LiquidationListed(
+        uint256 indexed orderId, address indexed liquidator, address indexed nft,
         uint256 tokenId, uint256 priceUSDC, uint64 expiresAt
     );
     event Cancelled(uint256 indexed orderId);
@@ -134,6 +139,36 @@ contract EcosystemMarketplaceV3 is AccessControl, ReentrancyGuard {
         if (newPrice == 0) revert ZeroPrice();
         o.priceUSDC = newPrice;
         emit PriceUpdated(orderId, newPrice);
+    }
+
+    /// @notice Liquidator-only listing path. Mirrors `list` but bypasses the
+    ///         `paused` gate so a LendingPool can always dispose of seized
+    ///         collateral, even while the marketplace is paused for ordinary
+    ///         trading. Caller (typically the LendingPool) must own the NFT
+    ///         and approve this marketplace before fill — same non-custodial
+    ///         pattern as the standard list path. Requires LIQUIDATOR_ROLE.
+    function liquidationList(address nft, uint256 tokenId, uint256 priceUSDC, uint64 expiresAt)
+        external
+        onlyRole(LIQUIDATOR_ROLE)
+        returns (uint256 orderId)
+    {
+        if (priceUSDC == 0) revert ZeroPrice();
+        if (!REGISTRY.isListable(nft)) revert NotListable(nft);
+        if (IERC721(nft).ownerOf(tokenId) != msg.sender) revert NotOwner();
+        if (activeOrderOf[nft][tokenId] != 0) revert AlreadyListed();
+
+        orderId = nextOrderId++;
+        orders[orderId] = Order({
+            seller: msg.sender,
+            nft: nft,
+            tokenId: tokenId,
+            priceUSDC: priceUSDC,
+            expiresAt: expiresAt,
+            active: true
+        });
+        activeOrderOf[nft][tokenId] = orderId;
+        emit Listed(orderId, msg.sender, nft, tokenId, priceUSDC, expiresAt);
+        emit LiquidationListed(orderId, msg.sender, nft, tokenId, priceUSDC, expiresAt);
     }
 
     function cancel(uint256 orderId) external {

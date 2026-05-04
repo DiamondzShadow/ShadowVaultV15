@@ -7,11 +7,11 @@
   "contracts": {
     "diggerRegistry": "0x090275f1ddae9e37C28D495AD9f9044723D787c9",
     "royaltyRouter": "0xb9c6edfcd6fBd861ba8b92c3eDddbf5babED1be4",
-    "marketplaceV3": "0x375eD66ABf360444cf2c23fCa1f4b12484087236"
+    "marketplaceV3": "0x749735623C5f9304E6a6715b066C9FBa7b9F30DB"
   },
   "config": {
     "protocolFeeBps": 250
   },
-  "deployedAt": "2026-05-04T23:20:11.868Z",
+  "deployedAt": "2026-05-04T23:37:52.270Z",
   "notes": "v3 alongside v2. v2 (0xa27A29DC...) stays for Phase 3 lending until v3.1."
 }

@@ -312,6 +312,87 @@ describe("EcosystemMarketplaceV3 — non-custodial + sponsored fill", function (
     });
   });
 
+  // ─────────────────────── liquidationList (Phase 3 lending) ─────────
+
+  describe("liquidationList (LIQUIDATOR_ROLE)", function () {
+    let LIQUIDATOR_ROLE;
+    beforeEach(async function () {
+      LIQUIDATOR_ROLE = await marketplace.LIQUIDATOR_ROLE();
+    });
+
+    it("rejects without LIQUIDATOR_ROLE", async function () {
+      await expect(marketplace.connect(alice).liquidationList(await nft.getAddress(), 1n, PRICE, 0))
+        .to.be.reverted;
+    });
+
+    it("succeeds for granted liquidator + writes the order", async function () {
+      // Bob is the liquidator (e.g. a future LendingPool). Mint an NFT to bob
+      // (simulating post-seizure custody) and approve the marketplace.
+      await (await nft.mint(bob.address)).wait();
+      const newId = 2n;
+      await (await nft.connect(bob).setApprovalForAll(await marketplace.getAddress(), true)).wait();
+
+      await (await marketplace.connect(admin).grantRole(LIQUIDATOR_ROLE, bob.address)).wait();
+
+      const tx = await marketplace.connect(bob).liquidationList(await nft.getAddress(), newId, PRICE, 0);
+      const rc = await tx.wait();
+      const orderId = 1n; // first order created in this fresh deployment
+
+      const o = await marketplace.orders(orderId);
+      expect(o.seller).to.eq(bob.address);
+      expect(o.priceUSDC).to.eq(PRICE);
+      expect(o.active).to.eq(true);
+      // NFT still in the liquidator's wallet — non-custody
+      expect(await nft.ownerOf(newId)).to.eq(bob.address);
+      await expect(tx).to.emit(marketplace, "Listed");
+      await expect(tx).to.emit(marketplace, "LiquidationListed");
+    });
+
+    it("bypasses pause (this is the whole point of the role)", async function () {
+      await (await nft.mint(bob.address)).wait();
+      await (await nft.connect(bob).setApprovalForAll(await marketplace.getAddress(), true)).wait();
+      await (await marketplace.connect(admin).grantRole(LIQUIDATOR_ROLE, bob.address)).wait();
+      await (await marketplace.connect(admin).setPaused(true)).wait();
+
+      // Normal list path is blocked by pause:
+      await (await nft.mint(carol.address)).wait();
+      await (await nft.connect(carol).setApprovalForAll(await marketplace.getAddress(), true)).wait();
+      await expect(marketplace.connect(carol).list(await nft.getAddress(), 3n, PRICE, 0))
+        .to.be.revertedWithCustomError(marketplace, "PausedErr");
+
+      // But liquidationList still works:
+      await (await marketplace.connect(bob).liquidationList(await nft.getAddress(), 2n, PRICE, 0)).wait();
+      expect((await marketplace.orders(1)).active).to.eq(true);
+    });
+
+    it("liquidation listings can be filled via the normal fill path (paused blocks fill)", async function () {
+      await (await nft.mint(bob.address)).wait();
+      await (await nft.connect(bob).setApprovalForAll(await marketplace.getAddress(), true)).wait();
+      await (await marketplace.connect(admin).grantRole(LIQUIDATOR_ROLE, bob.address)).wait();
+      await (await marketplace.connect(bob).liquidationList(await nft.getAddress(), 2n, PRICE, 0)).wait();
+
+      const orderId = 1n;
+      // unpaused fill works
+      await (await marketplace.connect(carol).fill(orderId)).wait();
+      expect(await nft.ownerOf(2n)).to.eq(carol.address);
+      expect((await marketplace.orders(orderId)).active).to.eq(false);
+    });
+
+    it("rejects if liquidator doesn't own the NFT", async function () {
+      await (await marketplace.connect(admin).grantRole(LIQUIDATOR_ROLE, bob.address)).wait();
+      // Token #1 is owned by alice, not bob.
+      await expect(marketplace.connect(bob).liquidationList(await nft.getAddress(), 1n, PRICE, 0))
+        .to.be.revertedWithCustomError(marketplace, "NotOwner");
+    });
+
+    it("rejects if NFT already has an active order", async function () {
+      await (await marketplace.connect(alice).list(await nft.getAddress(), 1n, PRICE, 0)).wait();
+      await (await marketplace.connect(admin).grantRole(LIQUIDATOR_ROLE, alice.address)).wait();
+      await expect(marketplace.connect(alice).liquidationList(await nft.getAddress(), 1n, PRICE, 0))
+        .to.be.revertedWithCustomError(marketplace, "AlreadyListed");
+    });
+  });
+
   // ─────────────────────────── admin ────────────────────────────────
 
   describe("admin", function () {
