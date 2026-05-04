@@ -1,0 +1,17 @@
+{
+  "chainId": 42161,
+  "network": "arbitrum",
+  "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  "treasury": "0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "contracts": {
+    "diggerRegistry": "0x090275f1ddae9e37C28D495AD9f9044723D787c9",
+    "royaltyRouter": "0xb9c6edfcd6fBd861ba8b92c3eDddbf5babED1be4",
+    "marketplaceV3": "0x375eD66ABf360444cf2c23fCa1f4b12484087236"
+  },
+  "config": {
+    "protocolFeeBps": 250
+  },
+  "deployedAt": "2026-05-04T23:20:11.868Z",
+  "notes": "v3 alongside v2. v2 (0xa27A29DC...) stays for Phase 3 lending until v3.1."
+}
