@@ -7,7 +7,7 @@ const { ethers } = hre;
 
 const SAFE   = "0x18b2b2ce7d05Bfe0883Ff874ba0C536A89D07363";
 const TARGET = "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3";  // deployer
-const VALUE  = ethers.parseEther("0.0001");
+const VALUE  = ethers.parseEther("0.00015");
 
 const SAFE_ABI = [
   "function nonce() view returns (uint256)",
