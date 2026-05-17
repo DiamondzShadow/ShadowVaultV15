@@ -1,3 +1,5 @@
+require("dotenv").config({ path: require("node:path").resolve(__dirname, "..", ".env.pool-e") });
+require("dotenv").config();
 // Send a small amount of HYPE from HC_KEEPER → deployer so the deployer
 // EOA has enough gas to call vault.withdrawPair after the basketAdapter
 // borrow. One-shot helper, intentionally simple.
