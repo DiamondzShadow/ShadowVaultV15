@@ -114,15 +114,42 @@ async function triggerWithdrawCycle(ctx) {
 }
 
 /// HLP→perp has landed. Move perp→spot so sweepFromCore can pull from spot.
+///
+/// Both perp (PrecompileLib.withdrawable) and inFlightFromHC are in HC perp's
+/// USDC 6-decimal unit, so the comparison is unit-correct.
+///
+/// Catch-up retry: HLP→perp vaultTransfer is processed by validators across
+/// the next 1-2 HC blocks. If we observe perp < inFlight, the previous
+/// vaultTransfer is still mid-processing. Poll up to PERP_CATCHUP_TRIES so a
+/// single keeper run completes the unwind instead of bailing and forcing the
+/// operator to wait for the next cron tick.
+const PERP_CATCHUP_TRIES = 6;        // up to 6 reads
+const PERP_CATCHUP_INTERVAL_MS = 5_000;  // 5s apart → ~30s total
+
 async function syncPerpToSpotCycle(ctx) {
   const { adapter } = ctx;
   const inFlight = await adapter.inFlightFromHC();
   if (inFlight === 0n) return;
-  const perp = await adapter.reportedPerpUsdc();
+
+  let perp = await adapter.reportedPerpUsdc();
+
+  // Wait for the HLP→perp vaultTransfer to fully land if it's still arriving.
+  // Without this, a 2-block validator delay would force us to bail mid-unwind
+  // and re-fire on the next cron, wasting up to 3 hours of user time.
+  let tries = 0;
+  while (perp < inFlight && tries < PERP_CATCHUP_TRIES) {
+    log("info", "perp-sync", "waiting for HLP→perp catch-up",
+      toJsonSafe({ perp, inFlight, attempt: tries + 1, of: PERP_CATCHUP_TRIES }));
+    await new Promise((r) => setTimeout(r, PERP_CATCHUP_INTERVAL_MS));
+    perp = await adapter.reportedPerpUsdc();
+    tries++;
+  }
+
   if (perp === 0n) {
-    log("info", "perp-sync", "waiting — perp empty (vaultTransfer not landed yet)");
+    log("info", "perp-sync", "still empty after catch-up — bail, next cron will retry");
     return;
   }
+
   // Move the smaller of (perp balance, in-flight). Partial is fine; we loop.
   const amount = perp > inFlight ? inFlight : perp;
   log("info", "perp-sync", "moving perp → spot",
@@ -131,18 +158,35 @@ async function syncPerpToSpotCycle(ctx) {
 }
 
 /// perp→spot has landed. Bridge spot→EVM.
+///
+/// HC spot USDC uses **8 decimals** (HC token registry, token index 0); EVM
+/// USDC uses 6. inFlightFromHC + sweepFromCore's arg use 6-dec. We must
+/// rescale spot to 6-dec before comparing, otherwise `min(spot, inFlight)`
+/// can pick `inFlight` when spot doesn't actually cover it (e.g. spot $3 in
+/// 8-dec is 3e8, > 16e6 inFlight, → keeper tries to bridge $16 from a $3
+/// balance → validators reject and inFlightFromHC stays stuck).
+const HC_SPOT_TO_EVM_USDC = 100n;   // 10^(8-6); converts 8-dec spot → 6-dec
+
 async function sweepCycle(ctx) {
   const { adapter } = ctx;
   const inFlight = await adapter.inFlightFromHC();
   if (inFlight === 0n) return;
-  const spot = await adapter.reportedSpotUsdc();
-  if (spot === 0n) {
-    log("info", "sweep", "waiting — spot empty (syncPerpToSpot not landed yet)");
+
+  const spot8 = await adapter.reportedSpotUsdc();         // 8-dec
+  const spot6 = spot8 / HC_SPOT_TO_EVM_USDC;              // 6-dec equivalent
+
+  if (spot6 === 0n) {
+    log("info", "sweep", "waiting — spot has no USDC (in 6-dec equivalent)",
+      toJsonSafe({ spot8 }));
     return;
   }
-  const amount = spot > inFlight ? inFlight : spot;
+
+  // Bridge the smaller of (spot 6-dec equivalent, in-flight 6-dec).
+  // sweepFromCore takes the EVM-side amount in 6-dec; the adapter's
+  // CoreWriterLib.bridgeToEvm converts to HC 8-dec internally.
+  const amount = spot6 > inFlight ? inFlight : spot6;
   log("info", "sweep", "bridging HC → EVM",
-    toJsonSafe({ amount, spot, inFlight }));
+    toJsonSafe({ amount, spot8, spot6, inFlight }));
   await (await adapter.sweepFromCore(amount)).wait();
 }
 
