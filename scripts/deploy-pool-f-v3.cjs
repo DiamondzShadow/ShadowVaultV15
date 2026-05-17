@@ -103,7 +103,44 @@ async function main() {
   console.log("6. Grant VAULT_ROLE on BasketReceipt → v3");
   await (await basketRx.grantRole(VAULT_ROLE, v3Addr)).wait();
 
-  // ───── 4. Save deployment artifact ────────────────────────────────────
+  // ───── 4. Seed pre-v3 receipt pairs (migration from v2) ──────────────
+  // Pool F v2 minted YieldReceipt + BasketReceipt without tracking the
+  // yield principal in the vault (v2 couldn't settle yield anyway).
+  // For each known pre-v3 pair, copy the principal in from the
+  // YieldReceipt's positionOf(tokenId).principalUsd6 reading.
+  //
+  // The list is admin-curated since the default RPC's 1000-block log
+  // range makes a generic event scan impractical. Edit POOL_F_V2_PAIRS
+  // below before re-running on chains with more legacy positions.
+  const POOL_F_V2_PAIRS = [
+    // { yieldTokenId, basketTokenId } — principal read on-chain
+    { yieldTokenId: 1n, basketTokenId: 1n },
+  ];
+  if (POOL_F_V2_PAIRS.length > 0) {
+    const yieldRxRead = await hre.ethers.getContractAt([
+      "function positionOf(uint256) view returns (uint64 strategyId, uint64 depositTime, uint128 principalUsd6, uint8 tier)",
+      "function ownerOf(uint256) view returns (address)",
+    ], YIELD_RECEIPT, deployer);
+    const v2Read = await hre.ethers.getContractAt([
+      "function basketOfYield(uint256) view returns (uint256)",
+    ], PREV_VAULT_V2, deployer);
+
+    console.log("\n7. Seed pre-v3 pairs");
+    for (const pair of POOL_F_V2_PAIRS) {
+      const pos = await yieldRxRead.positionOf(pair.yieldTokenId);
+      const principal = pos.principalUsd6 ?? pos[2];
+      const v2Basket = await v2Read.basketOfYield(pair.yieldTokenId);
+      if (v2Basket !== pair.basketTokenId) {
+        console.log(`   skip yieldId=${pair.yieldTokenId}: v2.basketOfYield=${v2Basket} != expected=${pair.basketTokenId}`);
+        continue;
+      }
+      const owner = await yieldRxRead.ownerOf(pair.yieldTokenId).catch(() => null);
+      console.log(`   seeding yieldId=${pair.yieldTokenId} basketId=${pair.basketTokenId} principal=${principal} owner=${owner}`);
+      await (await vaultV3.seedExistingPair(pair.yieldTokenId, pair.basketTokenId, principal)).wait();
+    }
+  }
+
+  // ───── 5. Save deployment artifact ────────────────────────────────────
   const outPath = path.resolve(__dirname, "..", "config", "deployed-pool-f-hc-v3.json");
   const out = {
     chainId: 999,

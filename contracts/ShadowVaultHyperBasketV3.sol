@@ -331,4 +331,40 @@ contract ShadowVaultHyperBasketV3 is AccessControl, Pausable, ReentrancyGuard {
 
     function pause()   external onlyRole(PAUSER_ROLE) { _pause();   }
     function unpause() external onlyRole(PAUSER_ROLE) { _unpause(); }
+
+    // ═══════════════════════════════════════════════════════════
+    //  Migration
+    // ═══════════════════════════════════════════════════════════
+
+    error AlreadySeeded(uint256 yieldTokenId);
+
+    event PairSeeded(uint256 indexed yieldTokenId, uint256 indexed basketTokenId, uint128 principalUsd6);
+
+    /// @notice One-shot migration helper for receipt pairs minted by Pool F
+    ///         v2 (which never tracked yieldPrincipalOf, since v2 couldn't
+    ///         settle the yield leg). Lets admin populate v3's mappings for
+    ///         a known pair so the holder can call withdrawPair on v3 and
+    ///         recover both legs. Admin reads the principal from the
+    ///         YieldReceipt's positionOf(tokenId).principalUsd6.
+    /// @dev    Trust model: DEFAULT_ADMIN_ROLE only. Idempotent — reverts
+    ///         on a re-seed so a typo can't double-count totalYieldPrincipal.
+    ///         No on-chain check that the principal value matches the
+    ///         receipt's positionOf — admin's responsibility to read it
+    ///         right. Trade-off accepted because Pool F v2 had ≤1 live
+    ///         pair at v3.1 deploy time.
+    function seedExistingPair(
+        uint256 yieldTokenId,
+        uint256 basketTokenId,
+        uint128 principalUsd6
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (basketOfYield[yieldTokenId] != 0) revert AlreadySeeded(yieldTokenId);
+
+        basketOfYield[yieldTokenId] = basketTokenId;
+        yieldOfBasket[basketTokenId] = yieldTokenId;
+        if (principalUsd6 > 0) {
+            yieldPrincipalOf[yieldTokenId] = principalUsd6;
+            totalYieldPrincipal += uint256(principalUsd6);
+        }
+        emit PairSeeded(yieldTokenId, basketTokenId, principalUsd6);
+    }
 }
