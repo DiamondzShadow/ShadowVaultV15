@@ -57,12 +57,18 @@ async function main() {
   const deployerBal = await usdc.balanceOf(signer.address);
   console.log("Deployer USDC   :", deployerBal.toString());
 
-  // EIP-1559 fields for Hyperliquid: priority=0, maxFee=baseFee*2 (1 gwei floor).
+  // EIP-1559 fields for Hyperliquid: priority=0, maxFee=baseFee*2 (0.1 gwei
+  // floor — tighter than the frontend's 1 gwei floor because we control the
+  // signer end-to-end and don't need a wallet-override safety margin).
   const block = await hre.ethers.provider.getBlock("latest");
   const baseFee = block?.baseFeePerGas ?? 0n;
   let maxFee = baseFee * 2n;
-  if (maxFee < 1_000_000_000n) maxFee = 1_000_000_000n;
+  if (maxFee < 100_000_000n) maxFee = 100_000_000n;  // 0.1 gwei
   const gasOverrides = { maxFeePerGas: maxFee, maxPriorityFeePerGas: 0n };
+  // Cap gas estimate for the final withdrawPair call. Hardhat's default
+  // estimateGas can balloon when validators report odd values; the real
+  // cost is closer to ~300k gas.
+  const withdrawOverrides = { ...gasOverrides, gasLimit: 800_000n };
 
   if (topup > 0n) {
     if (deployerBal >= topup) {
@@ -115,7 +121,7 @@ async function main() {
 
   const balBefore = await usdc.balanceOf(signer.address);
   console.log("\nSubmitting withdrawPair…");
-  const tx = await vault.withdrawPair(YIELD_TOKEN_ID, BASKET_TOKEN_ID, signer.address, gasOverrides);
+  const tx = await vault.withdrawPair(YIELD_TOKEN_ID, BASKET_TOKEN_ID, signer.address, withdrawOverrides);
   console.log("tx:", tx.hash);
   const r = await tx.wait();
   console.log("gas used:", r.gasUsed?.toString());
