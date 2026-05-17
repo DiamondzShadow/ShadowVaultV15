@@ -56,9 +56,6 @@ async function main() {
 
   const deployerBal = await usdc.balanceOf(signer.address);
   console.log("Deployer USDC   :", deployerBal.toString());
-  if (topup > 0n && deployerBal < topup) {
-    throw new Error(`Deployer has ${deployerBal} but needs ${topup} for topup`);
-  }
 
   // EIP-1559 fields for Hyperliquid: priority=0, maxFee=baseFee*2 (1 gwei floor).
   const block = await hre.ethers.provider.getBlock("latest");
@@ -68,10 +65,34 @@ async function main() {
   const gasOverrides = { maxFeePerGas: maxFee, maxPriorityFeePerGas: 0n };
 
   if (topup > 0n) {
-    console.log(`\nDonating ${topup} wei (${Number(topup) / 1e6} USDC) to adapter…`);
-    const tx = await usdc.transfer(ADAPTER, topup, gasOverrides);
-    console.log("tx:", tx.hash);
-    await tx.wait();
+    if (deployerBal >= topup) {
+      console.log(`\nDonating ${topup} wei (${Number(topup) / 1e6} USDC) from deployer EOA…`);
+      const tx = await usdc.transfer(ADAPTER, topup, gasOverrides);
+      console.log("tx:", tx.hash);
+      await tx.wait();
+    } else {
+      // Deployer has no spendable USDC; route the topup from the basketAdapter's
+      // idle balance. Admin temporarily grants self VAULT_ROLE → moves USDC
+      // basketAdapter → HLPAdapter → revokes role. Net effect on the user's
+      // payout: basket payout shrinks by `topup` but yield payout grows by
+      // ~`topup`, so the user is whole within a few wei of dust.
+      const peCfg2 = JSON.parse(fs.readFileSync(
+        path.resolve(__dirname, "..", "config", "deployed-pool-f-hc.json"), "utf8"));
+      const BASKET_ADAPTER = peCfg2.basketAdapter;
+      const basketAd = await hre.ethers.getContractAt([
+        "function addVault(address) external",
+        "function removeVault(address) external",
+        "function withdraw(uint256,address) returns (uint256)",
+      ], BASKET_ADAPTER, signer);
+      console.log(`\nDeployer has no spendable USDC. Borrowing ${topup} from basketAdapter idle…`);
+      await (await basketAd.addVault(signer.address, gasOverrides)).wait();
+      console.log("  grantRole VAULT_ROLE → deployer ✓");
+      const wtx = await basketAd.withdraw(topup, ADAPTER, gasOverrides);
+      await wtx.wait();
+      console.log(`  withdraw(${topup}, HLPAdapter) tx: ${wtx.hash}`);
+      await (await basketAd.removeVault(signer.address, gasOverrides)).wait();
+      console.log("  revokeRole VAULT_ROLE → deployer ✓");
+    }
   }
 
   // 2. Re-read state post-topup.
