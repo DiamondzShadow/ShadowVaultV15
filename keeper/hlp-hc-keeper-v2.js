@@ -11,16 +11,27 @@
 //
 //  Cycle (idempotent; safe to re-run):
 //    settleInbound  : inFlightToHC > 0 && equity grew        → confirmDeposit
-//    triggerWithdraw: WITHDRAW_USD set and lockup elapsed    → initiateHCWithdraw
+//    triggerWithdraw: WITHDRAW_USD set OR auto-buffer short  → initiateHCWithdraw
 //    syncPerpToSpot : inFlightFromHC > 0 && perp has USDC    → syncPerpToSpot
 //    sweep          : inFlightFromHC > 0 && spot has USDC    → sweepFromCore
 //    settleReturn   : inFlightFromHC > 0 && EVM USDC grew    → confirmReturn
+//
+//  Auto-buffer mode: when WITHDRAW_USD env is unset, the keeper maintains
+//  a small idle reserve on the adapter (default $100, configurable via
+//  MIN_IDLE_BUFFER_USD) so user withdraws don't routinely hit the
+//  AdapterPartialWithdraw revert. Most retail-sized withdraws fit
+//  comfortably under the buffer; if the buffer drains, the keeper
+//  initiates a fresh HC→EVM unwind on the next cron tick.
 //
 //  Environment:
 //    HYPEREVM_RPC              HyperEVM RPC (default https://rpc.hyperliquid.xyz/evm)
 //    HC_KEEPER_KEY             Keeper signer (KEEPER_ROLE). No custody.
 //    HLP_ADAPTER_ADDR          Deployed HLPAdapterHCv2 on HyperEVM.
-//    WITHDRAW_USD              Optional: trigger a withdraw of N (6-dec raw).
+//    WITHDRAW_USD              Optional: explicit unwind target (6-dec raw).
+//                              Overrides auto-buffer when set.
+//    MIN_IDLE_BUFFER_USD       Auto-buffer floor in 6-dec (default 100_000_000 = $100).
+//    BUFFER_MODE               "auto" (default) | "off" — set "off" to require
+//                              explicit WITHDRAW_USD on every unwind.
 // ═══════════════════════════════════════════════════════════════════════
 
 "use strict";
@@ -87,30 +98,61 @@ async function settleInboundCycle(ctx) {
 }
 
 async function triggerWithdrawCycle(ctx) {
-  const { adapter } = ctx;
-  if (ctx.withdrawUsd === 0n) return;
+  const { adapter, usdc, adapterAddr } = ctx;
+
+  // Compute the unwind target. Explicit WITHDRAW_USD wins; otherwise auto-
+  // buffer mode tops up idle so user withdraws don't routinely revert with
+  // AdapterPartialWithdraw. With both unset/off, the keeper no-ops on the
+  // unwind side (legacy behaviour).
+  let target = ctx.withdrawUsd;
+  let mode = "explicit";
+  if (target === 0n && ctx.bufferMode === "auto") {
+    const idle = await usdc.balanceOf(adapterAddr);
+    const inFlight = await adapter.inFlightFromHC();
+    const queued = idle + inFlight;
+    if (queued < ctx.minIdleBufferUsd) {
+      const shortfall = ctx.minIdleBufferUsd - queued;
+      const equity = await adapter.reportedHCEquity();
+      // Can't unwind more than HLP equity actually holds.
+      target = shortfall > equity ? equity : shortfall;
+      mode = "auto-buffer";
+      if (target === 0n) {
+        log("info", "withdraw", "auto-buffer skip — no HC equity to unwind",
+          toJsonSafe({ idle, inFlight, target_buffer: ctx.minIdleBufferUsd, equity }));
+        return;
+      }
+      log("info", "withdraw", "auto-buffer top-up planned",
+        toJsonSafe({ idle, inFlight, target_buffer: ctx.minIdleBufferUsd, shortfall, planning: target }));
+    } else {
+      log("info", "withdraw", "auto-buffer satisfied — no action",
+        toJsonSafe({ idle, inFlight, target_buffer: ctx.minIdleBufferUsd }));
+      return;
+    }
+  }
+  if (target === 0n) return;
+
   const inFlight = await adapter.inFlightFromHC();
   if (inFlight > 0n) {
     log("info", "withdraw", "skip — withdraw already in flight",
-      toJsonSafe({ inFlight }));
+      toJsonSafe({ inFlight, mode }));
     return;
   }
   const unlockMs = await adapter.lockupUnlockAtMs();
   const nowMs = BigInt(Date.now());
   if (unlockMs > 0n && nowMs < unlockMs) {
     log("info", "withdraw", "skip — HLP lockup active",
-      toJsonSafe({ unlockMs, nowMs }));
+      toJsonSafe({ unlockMs, nowMs, mode }));
     return;
   }
   const equity = await adapter.reportedHCEquity();
-  if (equity < ctx.withdrawUsd) {
+  if (equity < target) {
     log("warn", "withdraw", "requested > reported equity",
-      toJsonSafe({ equity, requested: ctx.withdrawUsd }));
+      toJsonSafe({ equity, requested: target, mode }));
     return;
   }
   log("info", "withdraw", "initiating HC withdraw",
-    toJsonSafe({ amount: ctx.withdrawUsd }));
-  await (await adapter.initiateHCWithdraw(ctx.withdrawUsd)).wait();
+    toJsonSafe({ amount: target, mode }));
+  await (await adapter.initiateHCWithdraw(target)).wait();
 }
 
 /// HLP→perp has landed. Move perp→spot so sweepFromCore can pull from spot.
@@ -227,10 +269,15 @@ async function main() {
 
   const baselineIdle = await usdc.balanceOf(adapterAddr);
   const withdrawUsd = process.env.WITHDRAW_USD ? BigInt(process.env.WITHDRAW_USD) : 0n;
+  const minIdleBufferUsd = process.env.MIN_IDLE_BUFFER_USD
+    ? BigInt(process.env.MIN_IDLE_BUFFER_USD)
+    : 100_000_000n; // $100 default (6-dec)
+  const bufferMode = (process.env.BUFFER_MODE || "auto").toLowerCase();
 
   const ctx = {
     adapter, adapterAddr, signer, usdc,
     withdrawUsd, baselineIdle,
+    minIdleBufferUsd, bufferMode,
   };
 
   log("info", "keeper", "starting",
