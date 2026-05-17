@@ -1,6 +1,6 @@
 {
   "chainId": 999,
-  "vault": "0x32a576aa0c90cA8cAf45EA3326176638d7ee07f8",
+  "vault": "0x9e64c87a7c37B158b5C8D2d30f9Ad0D6C8AC171D",
   "vault_v2_legacy": "0x3F4396417f142fD406215E8437C448Cb28bf7552",
   "basketAdapter": "0x39D10E5823E4472070413070E8a51bc75F0bd0D0",
   "yieldAdapter": "0x2F6aCbdd25FF081efE2f2f4fF239189DaC6C67a9",
@@ -14,6 +14,6 @@
     "basketBps": 6000,
     "yieldBps": 4000
   },
-  "deployedAt": "2026-05-17T19:28:22.319Z",
+  "deployedAt": "2026-05-17T19:40:33.484Z",
   "notes": "Pool F v3: withdrawPair now settles BOTH yield + basket legs. v2 vault remains callable for legacy basket-only withdrawPair on any pre-existing receipts that haven't been seeded into v3."
 }
