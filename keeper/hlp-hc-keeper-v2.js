@@ -302,7 +302,10 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((e) => { console.error(e); process.exit(1); });
+  // Force a clean exit(0) once work is done — otherwise lingering provider/HL keep-alive
+  // handles make Node abort on teardown (SIGABRT / rc -6), which Temporal retries as a
+  // failed activity, firing duplicate on-chain writes per cycle.
+  main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
 }
 
 module.exports = { main };
