@@ -23,6 +23,7 @@
 //    ARB_RPC            Arbitrum RPC URL (required)
 //    KEEPER_KEY         Keeper EOA private key (required, KEEPER_ROLE on each vault)
 //    ZEROEX_API_KEY     0x API key for authenticated quotes (recommended)
+//    PYTH_API_KEY       Pyth Hermes key (required since 2026-08-26; https://pythdata.app/signup)
 //    DEPLOYED_PATH      path to config/deployed.json (default: ../config/deployed.json)
 //    DRY_RUN            "1" = log what would run, don't send txs
 //
@@ -62,6 +63,7 @@ const ZEROEX_API_KEY = process.env.ZEROEX_API_KEY || process.env.ZERO_X_KEY || "
 const DEPLOYED_PATH = process.env.DEPLOYED_PATH
   || path.join(__dirname, "..", "config", "deployed.json");
 const DRY_RUN = process.env.DRY_RUN === "1";
+const PYTH_API_KEY = process.env.PYTH_API_KEY || "";
 
 // AllowanceHolder, not Permit2: the taker is the vault contract, which can't
 // sign a Permit2 message. The vault approves swapTarget then calls it, which
@@ -178,7 +180,11 @@ async function fetchHermesUpdates(priceIds) {
   for (const id of priceIds) params.append("ids[]", id);
   params.append("encoding", "hex");
 
-  const res = await fetch(`${PYTH_HERMES_API}?${params.toString()}`);
+  // Hermes requires an API key since the Pyth Core upgrade (2026-08-26):
+  // "Authorization: Bearer <key>". Keys: https://pythdata.app/signup
+  const res = await fetch(`${PYTH_HERMES_API}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${PYTH_API_KEY}` },
+  });
   if (!res.ok) {
     throw new Error(`Hermes ${res.status}: ${await res.text()}`);
   }
@@ -190,6 +196,10 @@ async function fetchHermesUpdates(priceIds) {
 /// Push all required Pyth updates on-chain. Pays the fee from the keeper EOA.
 async function pushPythUpdates(signer, poolId) {
   if (PYTH_PRICE_IDS.length === 0) return;
+  if (!PYTH_API_KEY) {
+    log("info", poolId, "pyth push skipped — PYTH_API_KEY not set");
+    return;
+  }
   let updateData;
   try {
     updateData = await fetchHermesUpdates(PYTH_PRICE_IDS);
