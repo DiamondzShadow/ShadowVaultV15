@@ -52,7 +52,12 @@ const DEPLOYED_PATH = process.env.DEPLOYED_PATH
   || path.join(__dirname, "..", "config", "deployed.json");
 const DRY_RUN = process.env.DRY_RUN === "1";
 
-const ZEROEX_V2_API = "https://api.0x.org/swap/permit2/quote";
+// AllowanceHolder, not Permit2: the taker is the vault contract, which can't
+// sign a Permit2 message. The vault approves swapTarget then calls it, which
+// is exactly the AllowanceHolder flow. transaction.to is always AllowanceHolder
+// (0x0000000000001fF3684f28c67538d4D072C22734), a fixed address — unlike the
+// Settler contracts behind Permit2 quotes, which 0x redeploys.
+const ZEROEX_V2_API = "https://api.0x.org/swap/allowance-holder/quote";
 const PYTH_HERMES_API = "https://hermes.pyth.network/v2/updates/price/latest";
 
 // Pyth contract on Arbitrum + price IDs the keeper should push every tick.
@@ -291,6 +296,13 @@ async function main() {
     if (!pool.vault) continue;
     if (pool.deprecated) {
       log("info", poolId, "skipping deprecated pool");
+      continue;
+    }
+    // HyperEVM pools (E/F, chainId 999) are run by the HyperEVM keepers. On
+    // the Arbitrum RPC their addresses have no code, so calling them only
+    // burns gas on empty transactions.
+    if (pool.chainId && Number(pool.chainId) !== Number(chainId)) {
+      log("info", poolId, "skipping pool on other chain", { chainId: pool.chainId });
       continue;
     }
     try {
