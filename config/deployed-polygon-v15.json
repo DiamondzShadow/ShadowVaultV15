@@ -1,0 +1,39 @@
+{
+  "version": "v15-polygon",
+  "network": "polygon",
+  "chainId": 137,
+  "usdc": "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+  "deployer": "0xC5D133296E17BA25DF0409a6C31607bf3B78e3e3",
+  "treasury": "0x6052C6559eD5e5CbE74Ac0D42205Ad4A1CFBEd43",
+  "note": "Rebuilt 2026-10-27 from diamondz-bridge src/abi/v15polygon.ts after ~/CauseVaultPolygonV15 was lost. Same contract/ABI as Arbitrum V15; run by keeper/keeper.js with DEPLOYED_PATH=this file. KEEPER_ROLE = deployer.",
+  "pools": {
+    "A": {
+      "vault": "0xBAF20b022c7D30E4F2f42238152A9AE7D183aaEf",
+      "positionNFT": "0x6bef5509890dc0f0B613ea8efe471ed9c23D7B1c",
+      "adapter": "0x57A70bA6d80FeFb0B7C508Cd9bb45bD85DcC12c2",
+      "yieldSource": "aave-v3",
+      "chainId": 137
+    },
+    "B": {
+      "vault": "0xB9FA2148A18Ac8a2Eea91e8529BAbc3B943970a4",
+      "positionNFT": "0x819736a28a2922c302a16A0c4CE39F402FFdbbc8",
+      "adapter": "0xae4072FBd25797955aC2Acf823F662767b8d0499",
+      "yieldSource": "gains-gtrade",
+      "chainId": 137
+    },
+    "C": {
+      "vault": "0xA92767d3AdE9859EaD492158aE26A70C883A34fF",
+      "positionNFT": "0x05CDD626ed21D6B3De096849a51ca5dA892dD5B7",
+      "adapter": "0xC2c2cf91Ed5289e4936929bD26BE691458bfeC84",
+      "yieldSource": "aave-v3",
+      "chainId": 137
+    },
+    "D": {
+      "vault": "0xa2A7227752C8f77b866D7903db39F1317f30fA08",
+      "positionNFT": "0x45985109C0235c320D2a0c9111C4CE905720C309",
+      "adapter": "0x8351B02Aaa6ebf8F79fa7D94aea736317d50E9c8",
+      "yieldSource": "aave-v3",
+      "chainId": 137
+    }
+  }
+}
