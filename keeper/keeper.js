@@ -42,10 +42,21 @@ const path = require("path");
 try { require("dotenv").config({ path: path.join(__dirname, "..", ".env") }); } catch (_) {}
 
 // ─────────── Config ───────────
+// Chain-agnostic: the same keeper runs Arbitrum (default) and Polygon V15.
+// KEEPER_RPC picks the chain's RPC; DEPLOYED_PATH picks the pool config.
 const ARB_RPC = process.env.ARB_RPC || "https://arb1.arbitrum.io/rpc";
-// Prefer KEEPER_KEY if set (dedicated operational key), else fall back to
+const RPC_URL = process.env.KEEPER_RPC || ARB_RPC;
+// KEEPER_KEY_VAR names the env var holding the signer key, so a chain whose
+// KEEPER_ROLE sits on a different wallet (Polygon: the deployer) can select it
+// without copying the key into the pm2 environment. Default: KEEPER_KEY, else
 // DEPLOYER_KEY so the first live run works against the current .env.
-const KEEPER_KEY = process.env.KEEPER_KEY || process.env.DEPLOYER_KEY;
+const KEEPER_KEY = process.env.KEEPER_KEY_VAR
+  ? process.env[process.env.KEEPER_KEY_VAR]
+  : (process.env.KEEPER_KEY || process.env.DEPLOYER_KEY);
+/// Skip harvestYield when the adapter's simulated profit is below this (USDC,
+/// 6 decimals). harvestYield is a silent no-op on zero profit but still costs
+/// gas — on Polygon (~275 gwei) that's ~0.5 POL/day across four pools.
+const MIN_HARVEST_USDC = BigInt(process.env.MIN_HARVEST_USDC || "100000"); // $0.10
 // Matches both ZEROEX_API_KEY (keeper README name) and ZERO_X_KEY (user's .env name).
 const ZEROEX_API_KEY = process.env.ZEROEX_API_KEY || process.env.ZERO_X_KEY || "";
 const DEPLOYED_PATH = process.env.DEPLOYED_PATH
@@ -95,6 +106,7 @@ const REBAL_USD = 500_000_000n; // $500 cap
 // ─────────── ABIs ───────────
 const VAULT_ABI = [
   "function harvestYield() external",
+  "function yieldAdapter() external view returns (address)",
   "function executeBuyBasket(address tokenOut, uint256 usdcAmount, uint256 minOut, address swapTarget, bytes swapCalldata) external",
   "function executeRebalance(address tokenIn, address tokenOut, uint256 amountIn, uint256 minOut, address swapTarget, bytes swapCalldata) external",
   "function executeWithdrawalSwap(uint256 posId, address tokenIn, uint256 amountIn, uint256 minOut, address swapTarget, bytes swapCalldata) external",
@@ -124,7 +136,9 @@ const PYTH_ABI = [
   "function getUpdateFee(bytes[] updateData) external view returns (uint256)",
 ];
 
-const USDC_ADDR = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
+// Arbitrum native USDC by default; main() overrides it from deployed.usdc so
+// the Polygon config can point at Polygon USDC.
+let USDC_ADDR = "0xaf88d065e77c8cC2239327C5EDb3A432268e5831";
 
 // ─────────── GMX Adapter ABI (for push/pull/settle) ───────────
 const GMX_ADAPTER_ABI = [
@@ -278,7 +292,14 @@ async function main() {
   const deployed = JSON.parse(fs.readFileSync(DEPLOYED_PATH, "utf8"));
   const chainId = deployed.chainId;
 
-  const provider = new ethers.JsonRpcProvider(ARB_RPC);
+  if (deployed.usdc) USDC_ADDR = deployed.usdc;
+
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const net = await provider.getNetwork();
+  if (Number(net.chainId) !== Number(chainId)) {
+    console.error(`RPC chainId ${net.chainId} != config chainId ${chainId} (${DEPLOYED_PATH})`);
+    process.exit(1);
+  }
   const signer = new ethers.Wallet(KEEPER_KEY, provider);
   log("info", "keeper", "starting", {
     keeper: signer.address,
@@ -290,7 +311,8 @@ async function main() {
   const usdc = new ethers.Contract(USDC_ADDR, ERC20_ABI, provider);
 
   // Push Pyth updates once per tick before any pool touches the oracle.
-  await pushPythUpdates(signer, "keeper");
+  // Pyth contract + price IDs are Arbitrum-specific.
+  if (Number(chainId) === 42161) await pushPythUpdates(signer, "keeper");
 
   for (const [poolId, pool] of Object.entries(deployed.pools)) {
     if (!pool.vault) continue;
@@ -323,7 +345,18 @@ async function runPool(poolId, pool, ctx) {
 
   // ───── 1. Harvest ─────
   try {
-    if (DRY_RUN) {
+    // Simulate the adapter's harvest from the vault (free eth_call) and skip
+    // the transaction when there's nothing worth collecting. If the
+    // simulation itself fails, fall through and harvest as before.
+    let profit = null;
+    try {
+      const adapterAddr = await vault.yieldAdapter();
+      const adapter = new ethers.Contract(adapterAddr, ["function harvest() returns (uint256)"], provider);
+      profit = await adapter.harvest.staticCall({ from: vaultAddr });
+    } catch (_) { /* unknown — harvest anyway */ }
+    if (profit !== null && profit < MIN_HARVEST_USDC) {
+      log("info", poolId, "harvest skipped — below minimum", { profit: profit.toString(), min: MIN_HARVEST_USDC.toString() });
+    } else if (DRY_RUN) {
       log("info", poolId, "DRY: would harvestYield");
     } else {
       const tx = await vault.harvestYield();
@@ -376,9 +409,22 @@ async function runPool(poolId, pool, ctx) {
     })),
   });
 
+  // While any withdrawal is REQUESTED, don't buy or rebalance the basket:
+  // the idle USDC is what pays the withdrawal, and step 5 would just sell
+  // what step 3 bought (a round trip that only burns gas + slippage).
+  let hasPendingWithdraw = false;
+  const nextPosIdEarly = Number(await vault.nextPosId());
+  for (let posId = 1; posId < nextPosIdEarly && !hasPendingWithdraw; posId++) {
+    const pos = await vault.positions(posId);
+    if (Number(pos.withdrawStatus) === 1) hasPendingWithdraw = true;
+  }
+  if (hasPendingWithdraw) {
+    log("info", poolId, "withdrawal pending — skipping buyBasket + rebalance");
+  }
+
   // ───── 3. Route idle USDC to most-underweight token ─────
   const idleUsdc = await usdc.balanceOf(vaultAddr);
-  if (idleUsdc >= MIN_IDLE_USDC) {
+  if (!hasPendingWithdraw && idleUsdc >= MIN_IDLE_USDC) {
     let worstIdx = -1;
     let worstDrift = 0n;
     for (let i = 0; i < tokens.length; i++) {
@@ -411,7 +457,7 @@ async function runPool(poolId, pool, ctx) {
   // The -maxUnder flips the sign so we compare positive bps on both sides.
   const sellTriggered = maxOver    >= BigInt(DRIFT_SELL_BPS);
   const buyTriggered  = (-maxUnder) >= BigInt(DRIFT_BUY_BPS);
-  if ((sellTriggered || buyTriggered) && maxOverIdx !== -1 && maxUnderIdx !== -1) {
+  if (!hasPendingWithdraw && (sellTriggered || buyTriggered) && maxOverIdx !== -1 && maxUnderIdx !== -1) {
     try {
       const inCfg = basket.find((b) => b.token.toLowerCase() === tokens[maxOverIdx].toLowerCase());
       const outCfg = basket.find((b) => b.token.toLowerCase() === tokens[maxUnderIdx].toLowerCase());
