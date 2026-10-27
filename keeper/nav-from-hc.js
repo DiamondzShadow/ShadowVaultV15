@@ -138,7 +138,11 @@ async function main() {
 }
 
 if (require.main === module) {
-  main().catch((e) => { console.error(e); process.exit(1); });
+  // Force a clean exit(0) once work is done — otherwise lingering provider / HL-SDK
+  // keep-alive handles keep the event loop open, so Node exits non-zero (or Temporal's
+  // subprocess timeout kills it). Temporal then reads a SUCCESSFUL NAV push as a failed
+  // activity and retries, firing duplicate pushNav txs — and burning keeper gas — per cycle.
+  main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });
 }
 
 module.exports = { main };
