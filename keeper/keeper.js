@@ -409,9 +409,22 @@ async function runPool(poolId, pool, ctx) {
     })),
   });
 
+  // While any withdrawal is REQUESTED, don't buy or rebalance the basket:
+  // the idle USDC is what pays the withdrawal, and step 5 would just sell
+  // what step 3 bought (a round trip that only burns gas + slippage).
+  let hasPendingWithdraw = false;
+  const nextPosIdEarly = Number(await vault.nextPosId());
+  for (let posId = 1; posId < nextPosIdEarly && !hasPendingWithdraw; posId++) {
+    const pos = await vault.positions(posId);
+    if (Number(pos.withdrawStatus) === 1) hasPendingWithdraw = true;
+  }
+  if (hasPendingWithdraw) {
+    log("info", poolId, "withdrawal pending — skipping buyBasket + rebalance");
+  }
+
   // ───── 3. Route idle USDC to most-underweight token ─────
   const idleUsdc = await usdc.balanceOf(vaultAddr);
-  if (idleUsdc >= MIN_IDLE_USDC) {
+  if (!hasPendingWithdraw && idleUsdc >= MIN_IDLE_USDC) {
     let worstIdx = -1;
     let worstDrift = 0n;
     for (let i = 0; i < tokens.length; i++) {
@@ -444,7 +457,7 @@ async function runPool(poolId, pool, ctx) {
   // The -maxUnder flips the sign so we compare positive bps on both sides.
   const sellTriggered = maxOver    >= BigInt(DRIFT_SELL_BPS);
   const buyTriggered  = (-maxUnder) >= BigInt(DRIFT_BUY_BPS);
-  if ((sellTriggered || buyTriggered) && maxOverIdx !== -1 && maxUnderIdx !== -1) {
+  if (!hasPendingWithdraw && (sellTriggered || buyTriggered) && maxOverIdx !== -1 && maxUnderIdx !== -1) {
     try {
       const inCfg = basket.find((b) => b.token.toLowerCase() === tokens[maxOverIdx].toLowerCase());
       const outCfg = basket.find((b) => b.token.toLowerCase() === tokens[maxUnderIdx].toLowerCase());
