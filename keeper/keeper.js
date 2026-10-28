@@ -58,6 +58,11 @@ const KEEPER_KEY = process.env.KEEPER_KEY_VAR
 /// 6 decimals). harvestYield is a silent no-op on zero profit but still costs
 /// gas — on Polygon (~275 gwei) that's ~0.5 POL/day across four pools.
 const MIN_HARVEST_USDC = BigInt(process.env.MIN_HARVEST_USDC || "100000"); // $0.10
+/// Refuse to completeWithdraw when the recorded payout exceeds this multiple
+/// of the position's deposit (bps). completeWithdraw pays from the vault's
+/// whole USDC balance, so an inflated `usdcGathered` (e.g. Polygon Pool A
+/// pos 1: ~$65.9 owed on a $5 deposit) would pay out other depositors' USDC.
+const MAX_PAYOUT_MULT_BPS = BigInt(process.env.MAX_PAYOUT_MULT_BPS || "30000"); // 3x
 // Matches both ZEROEX_API_KEY (keeper README name) and ZERO_X_KEY (user's .env name).
 const ZEROEX_API_KEY = process.env.ZEROEX_API_KEY || process.env.ZERO_X_KEY || "";
 const DEPLOYED_PATH = process.env.DEPLOYED_PATH
@@ -499,6 +504,17 @@ async function runPool(poolId, pool, ctx) {
 // ─────────── Pending withdrawal flow ───────────
 async function processPendingWithdraw(vault, vaultAddr, posId, pos, basket, ctx, poolId) {
   const { signer, provider } = ctx;
+
+  const pw = await vault.pendingWithdraws(posId);
+  const owed = BigInt(pw.usdcGathered) + BigInt(pw.yieldUSDC) + BigInt(pw.basketUSDC);
+  const cap = (BigInt(pos.depositAmount) * MAX_PAYOUT_MULT_BPS) / 10_000n;
+  if (owed > cap) {
+    log("error", poolId, "withdraw payout exceeds sanity cap — refusing to complete", {
+      posId, owed: owed.toString(), deposit: pos.depositAmount.toString(), cap: cap.toString(),
+    });
+    return;
+  }
+
   const wsdmTotalSupply = BigInt(await vault.wsdmTotalSupply());
   if (wsdmTotalSupply === 0n) {
     // No basket shares → just complete.

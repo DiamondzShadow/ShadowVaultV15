@@ -15,8 +15,9 @@ module.exports = {
       name: "v15-keeper",
       script: "./keeper/keeper.js",
       autorestart: false,
-      // Fire the keeper every 3 hours on the hour.
-      cron_restart: "0 */3 * * *",
+      // Every 3 hours at :07 — off the hour, when other jobs saturate the
+      // shared Uniblock 1000 CU/s cap and Pool A reads fail.
+      cron_restart: "7 */3 * * *",
       env: {
         ARB_RPC: process.env.ARB_RPC,
         KEEPER_KEY: process.env.KEEPER_KEY,
