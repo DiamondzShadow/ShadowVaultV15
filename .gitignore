@@ -44,3 +44,7 @@ deployments/
 # --- internal ---
 lovable/
 docs/SAFE_TXS_*.md.bak
+
+# python bytecode
+__pycache__/
+*.pyc
