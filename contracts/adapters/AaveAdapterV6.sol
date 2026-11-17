@@ -31,6 +31,13 @@ interface IRewardsController {
 //  Chainlink AggregatorV3 — weETH/USD oracle
 // ─────────────────────────────────────────────────────────────
 
+/// Aave's CLRatePriceCapAdapter (weETH/USD = ETH/USD × weETH ratio, capped). It implements
+/// latestAnswer() but NOT latestRoundData() — calling the latter reverts (found 2026-11-17).
+interface IAavePriceCapAdapter {
+    function latestAnswer() external view returns (int256);
+    function BASE_TO_USD_AGGREGATOR() external view returns (address);
+}
+
 interface IAggregatorV3 {
     function latestRoundData()
         external
@@ -280,13 +287,19 @@ contract AaveAdapterV6 is IYieldAdapter, AccessControl, ReentrancyGuard {
 
                         uint256 usdcBefore = USDC.balanceOf(address(this));
 
+                        // Anti-sandwich: floor the swap output at the Chainlink-oracle
+                        // value of weethOut minus swapSlippageBps, instead of trusting
+                        // the vault's 95% recovery check alone (amountOutMinimum:0 let an
+                        // MEV bot extract up to the vault's tolerance on every withdrawal).
+                        uint256 minUsdcOut = (((weethOut * price) / 1e20) * (BPS - swapSlippageBps)) / BPS;
+
                         UNI_ROUTER.exactInput(
                             ISwapRouter.ExactInputParams({
                                 path: path,
                                 recipient: address(this),
                                 deadline: block.timestamp,
                                 amountIn: weethOut,
-                                amountOutMinimum: 0 // vault's 95% recovery check is the guard
+                                amountOutMinimum: minUsdcOut
                             })
                         );
 
@@ -460,8 +473,13 @@ contract AaveAdapterV6 is IYieldAdapter, AccessControl, ReentrancyGuard {
     /// @return price The weETH/USD price scaled to oracle decimals (8).
     /// @return updatedAt Timestamp of the last oracle update.
     function _getOraclePrice() internal view returns (uint256 price, uint256 updatedAt) {
-        (, int256 answer, , uint256 _updatedAt, ) = WEETH_USD_ORACLE.latestRoundData();
+        // Price: Aave's capped weETH/USD adapter (latestAnswer only). Freshness: its underlying Chainlink
+        // ETH/USD aggregator's updatedAt (the adapter has no timestamp of its own).
+        IAavePriceCapAdapter capped = IAavePriceCapAdapter(address(WEETH_USD_ORACLE));
+        int256 answer = capped.latestAnswer();
         if (answer <= 0) revert OracleInvalidPrice(answer);
+        (, int256 baseAnswer, , uint256 _updatedAt, ) = IAggregatorV3(capped.BASE_TO_USD_AGGREGATOR()).latestRoundData();
+        if (baseAnswer <= 0) revert OracleInvalidPrice(baseAnswer);
         if (block.timestamp - _updatedAt > oracleStaleness) {
             revert OracleStale(_updatedAt, block.timestamp - oracleStaleness);
         }

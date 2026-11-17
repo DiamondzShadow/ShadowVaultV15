@@ -69,7 +69,7 @@ async function fundUSDC(recipient, amount) {
     // 2. Deploy vault
     console.log("  [2/4] Deploy vault");
     const Vault = await ethers.getContractFactory("ShadowVaultV15", admin);
-    vault = await Vault.deploy(admin.address, adapterAddr, TREASURY, SDM);
+    vault = await Vault.deploy(admin.address, adapterAddr, TREASURY, SDM, "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xFdB631F5EE196F0ed6FAa767959853A9F217697D"); // + USDC, Arbitrum sequencer-uptime feed (constructor gained these after the initial release)
     await vault.waitForDeployment();
     console.log("    vault:", await vault.getAddress());
 
@@ -91,10 +91,9 @@ async function fundUSDC(recipient, amount) {
       USDC_ADDR, 10_000, ethers.ZeroAddress, 0, 6, 0
     )).wait();
 
-    // Adjust pool fees — weETH/WETH at 0.01% may not exist on Arbitrum.
-    // Try 500 (0.05%) for weETH/WETH, 500 for WETH/USDC.
-    await (await adapter.setPoolFees(500, 500)).wait();
-    console.log("    pool fees set: weETH/WETH=500, WETH/USDC=500");
+    // weETH/WETH 0.01% is the liquid pool (2026-11: the 0.05% one quotes ~0.0009 weETH per $500); WETH/USDC 0.05%.
+    await (await adapter.setPoolFees(100, 500)).wait();
+    console.log("    pool fees set: weETH/WETH=100, WETH/USDC=500");
 
     // Relax oracle staleness for fork test (block may be old)
     await (await adapter.setOracleStaleness(86400)).wait(); // 24h
