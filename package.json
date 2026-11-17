@@ -23,6 +23,7 @@
     "solidity-bytes-utils": "^0.8.4"
   },
   "dependencies": {
+    "@gmx-io/sdk": "^2.9.1",
     "@nktkas/hyperliquid": "^0.32.2"
   }
 }
