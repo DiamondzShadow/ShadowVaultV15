@@ -54,7 +54,11 @@ async function fundUSDC(recipient, amount) {
   await usdc.transfer(recipient, amount);
 }
 
-(forking ? describe : describe.skip)("PendleAdapterV5 — SYInvalidTokenOut fix (Arbitrum fork)", function () {
+// ⛔ DEPRECATED 2026-11-17 (owner decision): Pendle-gUSDC is not worth running. gUSDC (~$1.34 ERC-4626 share) can
+// only be exited via near-empty Uniswap gUSDC/USDC pools (~$218 liquidity, ~20%+ loss) or the Gains withdrawal
+// queue (days). The vault's 95% recovery check refuses those exits, so funds stay safe but stuck. The adapter
+// source stays because PendleAdapterV5 is deployed (pendle_a/b/c); no new Pendle deployments.
+describe.skip("PendleAdapterV5 — SYInvalidTokenOut fix (Arbitrum fork)", function () {
   this.timeout(300_000);
 
   const DEPOSIT = ethers.parseUnits("500", 6); // $500 — proves mechanism at real deposit size
@@ -97,7 +101,7 @@ async function fundUSDC(recipient, amount) {
     // 2. Deploy vault
     console.log("  [2/4] Deploy vault");
     const Vault = await ethers.getContractFactory("ShadowVaultV15", admin);
-    vault = await Vault.deploy(admin.address, adapterAddr, TREASURY, SDM);
+    vault = await Vault.deploy(admin.address, adapterAddr, TREASURY, SDM, "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", "0xFdB631F5EE196F0ed6FAa767959853A9F217697D"); // + USDC, Arbitrum sequencer-uptime feed (constructor gained these after the initial release)
     await vault.waitForDeployment();
     console.log("    vault:", await vault.getAddress());
 
@@ -127,7 +131,7 @@ async function fundUSDC(recipient, amount) {
     console.log("  Setup complete\n");
   });
 
-  it("deposit $3 FLEX succeeds (Pendle deposit path is unchanged)", async function () {
+  it("deposit $500 FLEX succeeds (Pendle deposit path is unchanged)", async function () {
     await fundUSDC(alice.address, DEPOSIT);
     const usdcAlice = await ethers.getContractAt(ERC20_ABI, USDC_ADDR, alice);
     await (await usdcAlice.approve(await vault.getAddress(), DEPOSIT)).wait();
@@ -147,55 +151,30 @@ async function fundUSDC(recipient, amount) {
     expect(ptHeld).to.be.gt(0);
   });
 
-  it("requestWithdraw succeeds — V5 fix for SYInvalidTokenOut", async function () {
-    // THIS IS THE TEST THAT MATTERS. Old adapter reverts here with
-    // SYInvalidTokenOut(0xaf88d065e77c8cC2239327C5EDb3A432268e5831).
-    // PendleAdapterV5 should succeed by redeeming to gUSDC then
-    // swapping gUSDC → USDC via Uniswap V3.
+  it("requestWithdraw reaches the gUSDC → USDC leg (no SYInvalidTokenOut) and the floor refuses an illiquid exit", async function () {
+    // V5 fix: the old adapter reverted with SYInvalidTokenOut(USDC). V5 redeems PT → gUSDC, then swaps gUSDC → USDC.
+    // 2026-11-17: gUSDC is worth ~$1.34 (ERC-4626 share price) but the Uniswap gUSDC/USDC pools hold only ~$218,
+    // so that swap clears ~20%+ below value. The share-price floor (V5.1) now refuses it instead of letting the
+    // user lose the gap; the vault's 95% recovery check is a second backstop. The position must stay intact.
     await hre.network.provider.send("evm_mine", []);
-
-    const tx = await vault.connect(alice).requestWithdraw(1);
-    const rcpt = await tx.wait();
-    console.log("    requestWithdraw gas:", rcpt.gasUsed.toString());
-    expect(rcpt.status).to.equal(1);
-
-    // Check pending withdraw was recorded
-    const pending = await vault.pendingWithdraws(1);
-    console.log("    pending yieldUSDC:", ethers.formatUnits(pending.yieldUSDC, 6));
-    console.log("    pending basketUSDC:", ethers.formatUnits(pending.basketUSDC, 6));
-    // yieldUSDC should be > 0 (adapter returned something)
-    expect(pending.yieldUSDC).to.be.gt(0);
+    let err;
+    try {
+      await vault.connect(alice).requestWithdraw(1);
+    } catch (e) {
+      err = e;
+    }
+    expect(err, "withdraw through an empty gUSDC pool must not succeed at a loss").to.exist;
+    const msg = String(err.message);
+    expect(msg).to.not.include("SYInvalidTokenOut");
+    expect(msg.includes("Too little received") || msg.includes("AdapterPartialWithdraw"), msg).to.equal(true);
+    console.log("    refused:", msg.includes("Too little received") ? "swap floor (share price)" : "vault 95% check");
   });
 
-  it("completeWithdraw returns USDC to alice", async function () {
-    // Fast-forward 31 minutes past the 30-min withdraw timer
-    await hre.network.provider.send("evm_increaseTime", [31 * 60]);
-    await hre.network.provider.send("evm_mine", []);
-
-    const balBefore = await USDC.balanceOf(alice.address);
-    const tx = await vault.connect(alice).completeWithdraw(1);
-    const rcpt = await tx.wait();
-    console.log("    completeWithdraw gas:", rcpt.gasUsed.toString());
-    expect(rcpt.status).to.equal(1);
-
-    const balAfter = await USDC.balanceOf(alice.address);
-    const received = balAfter - balBefore;
-    console.log("    USDC received:", ethers.formatUnits(received, 6));
-    // Should get back at least 90% of $500 (slippage + fees)
-    expect(received).to.be.gte(ethers.parseUnits("450", 6));
-    console.log("\n    ═══ PENDLE V5 WITHDRAW FIX VERIFIED ═══");
+  it("the refused exit leaves alice's position and the adapter's PT intact", async function () {
+    expect(await nft.ownerOf(1)).to.equal(alice.address);
+    const pt = await ethers.getContractAt(ERC20_ABI, PENDLE_PT);
+    expect(await pt.balanceOf(await adapter.getAddress())).to.be.gt(0n);
   });
 
-  it("adapter has no residual gUSDC or PT after full withdraw", async function () {
-    const gusdc = await ethers.getContractAt(ERC20_ABI, GUSDC, admin);
-    const pt = await ethers.getContractAt(ERC20_ABI, PENDLE_PT, admin);
-    const adapterAddr = await adapter.getAddress();
 
-    const gusdcBal = await gusdc.balanceOf(adapterAddr);
-    const ptBal = await pt.balanceOf(adapterAddr);
-    console.log("    residual gUSDC:", gusdcBal.toString());
-    console.log("    residual PT:", ptBal.toString());
-    // May have dust but should be near-zero
-    expect(gusdcBal).to.be.lte(ethers.parseUnits("0.01", 6));
-  });
 });
