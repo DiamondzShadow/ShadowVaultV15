@@ -87,6 +87,13 @@ echo "  vault will deploy to $VAULT"
 
 case "$MODE" in --fork|--execute) ;; *) echo "read-only run — nothing sent. --fork to rehearse, --execute to deploy."; exit 0;; esac
 
+if [ "$MODE" = "--execute" ]; then
+  DEPLOYER_KEY="${DEPLOYER_KEY:-${PRIVATE_KEY:-${DEPLOYER_PK:-}}}"
+  [ -n "$DEPLOYER_KEY" ] || die "no deployer key in env (DEPLOYER_KEY / PRIVATE_KEY / DEPLOYER_PK)"
+  KADDR=$(cast wallet address --private-key "$DEPLOYER_KEY")
+  [ "$(echo "$KADDR" | tr A-F a-f)" = "$(echo "$DEPLOYER" | tr A-F a-f)" ] || die "key resolves to $KADDR, not the deployer"
+fi
+
 echo "== deploy"
 tx $DEPLOYER $VAULT_FACTORY 'createVaultV2(address,address,bytes32)' $DEPLOYER $USDG $SALT
 [ "$(cast code "$VAULT" --rpc-url "$RPC" | wc -c)" -gt 3 ] || die "vault not at predicted address"
